@@ -10,7 +10,7 @@ BAUD_RATE = 9600
 
 # Generate a unique file name using the current date and time
 current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-CSV_FILE_NAME = f'voltage_log_real_time_{current_time}.csv'
+CSV_FILE_NAME = f'log_files/voltage_log_real_time_{current_time}.csv'
 
 # Initialize serial connection
 ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
