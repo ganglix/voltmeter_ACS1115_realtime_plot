@@ -2,6 +2,7 @@ import serial
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import csv
+from datetime import datetime
 
 # Speed and Efficiency: Lower. Data is written to disk in real-time, resulting in frequent disk I/O operations. This can slow down the program, especially with high-frequency data, due to the overhead associated with each write operation.
 # Robustness: High. Continuously saving data as it arrives minimizes the risk of data loss due to crashes or power outages. Most data is preserved, making this method more reliable for critical data logging.
@@ -9,7 +10,10 @@ import csv
 # Constants
 SERIAL_PORT = '/dev/cu.usbmodem143101'
 BAUD_RATE = 9600
-CSV_FILE_NAME = 'voltage_log_real_time.csv'
+
+# Generate a unique file name using the current date and time
+current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+CSV_FILE_NAME = f'voltage_log_real_time_{current_time}.csv'
 
 # Initialize serial connection
 ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
