@@ -1,11 +1,10 @@
-#include <Wire.h>
 #include <Adafruit_ADS1X15.h>
 
 Adafruit_ADS1115 ads; // Instantiate ADS1115. Default I2C address 0x48 is used.
 
-int16_t adc0;  // variables to hold ADC reading
-float multiplier = 0.125F;               // ADS1115  // 1x gain   +/- 4.096V  1 bit = 0.125mV
-float voltage_read_adc; // Added variables for voltage readings
+int16_t adc0, adc1, adc2, adc3;  // Variables to hold ADC reading for each channel
+float multiplier = 0.125F;       // ADS1115  // 1x gain   +/- 4.096V  1 bit = 0.125mV
+float voltage0, voltage1, voltage2, voltage3; // Variables for voltage readings for each channel
 
 
 void setup() {
@@ -28,14 +27,34 @@ void setup() {
 
 
 void loop() {
-  float time = micros() /1e6; // calculate the current time using micros and convert it to seconds for time stamping
+  float time = millis() / 1000.0; // Calculate the current time using millis() and convert it to seconds for time stamping
 
-  adc0 = ads.readADC_SingleEnded(0); // Read from ADS1115 AIN0
-  voltage_read_adc = adc0 * multiplier; // Convert to mV
+  // Read from ADS1115 channels
+  adc0 = ads.readADC_SingleEnded(0); // Read AIN0
+  adc1 = ads.readADC_SingleEnded(1); // Read AIN1
+  adc2 = ads.readADC_SingleEnded(2); // Read AIN2
+  adc3 = ads.readADC_SingleEnded(3); // Read AIN3
 
+  // Convert ADC readings to voltages
+  voltage0 = adc0 * multiplier; 
+  voltage1 = adc1 * multiplier; 
+  voltage2 = adc2 * multiplier; 
+  voltage3 = adc3 * multiplier; 
+
+  // Print the current time and voltage readings to Serial
   Serial.print(time);
   Serial.print(", ");
-  Serial.println(voltage_read_adc); 
-  delay(2000);
+  
+  Serial.print(voltage0);
+  Serial.print(", ");
 
+  Serial.print(voltage1);
+  Serial.print(", ");
+
+  Serial.print(voltage2);
+  Serial.print(", ");
+
+  Serial.println(voltage3);
+
+  delay(5000);  // Delay for 5 seconds before next reading
 }
