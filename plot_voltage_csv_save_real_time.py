@@ -5,7 +5,7 @@ import csv
 from datetime import datetime
 
 # Constants
-SERIAL_PORT = '/dev/cu.usbmodem143101'
+SERIAL_PORT = '/dev/cu.usbserial-14310'
 BAUD_RATE = 9600
 
 # Generate a unique file name using the current date and time
@@ -61,7 +61,7 @@ def update_plot(frame):
     plt.plot(x_vals, voltage_2, label='Voltage 2')
     plt.plot(x_vals, voltage_3, label='Voltage 3')
     plt.plot(x_vals, voltage_4, label='Voltage 4')
-    plt.xlabel('Time')
+    plt.xlabel('Time (s)')
     plt.ylabel('Voltage (mV)')
     plt.legend()
 

@@ -1,3 +1,4 @@
+#include <Wire.h>
 #include <Adafruit_ADS1X15.h>
 
 Adafruit_ADS1115 ads; // Instantiate ADS1115. Default I2C address 0x48 is used.
