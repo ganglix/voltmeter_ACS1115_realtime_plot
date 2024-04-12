@@ -5,7 +5,7 @@ import csv
 from datetime import datetime
 
 # Constants
-SERIAL_PORT = '/dev/cu.usbserial-14310'
+SERIAL_PORT = '/dev/cu.usbserial-14340'
 BAUD_RATE = 9600
 
 # Generate a unique file name using the current date and time
