@@ -3,9 +3,35 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import csv
 from datetime import datetime
+from serial.tools import list_ports  # Import the list_ports tool
+
+def find_arduino_port():
+    """This function attempts to find a port connected to an Arduino by checking against a list of common device names."""
+    ports = list_ports.comports()
+    common_descriptors = [
+        "COM",  # Common on Windows
+        "/dev/cu.usbmodem",  # Common on macOS
+        "/dev/cu.usbserial",  # Also found on macOS
+        "/dev/ttyUSB",  # Common on Linux
+        "/dev/ttyACM"  # Also found on Linux
+    ]
+    
+    for port in ports:
+        # Check if any part of the port's device name contains any of the common descriptors
+        if any(descriptor in port.device for descriptor in common_descriptors):
+            print(f"Arduino found on port: {port.device}")
+            return port.device
+    
+    print("No Arduino found based on common naming conventions.")
+    return None
 
 # Constants
-SERIAL_PORT = '/dev/cu.usbserial-14340'
+SERIAL_PORT = find_arduino_port()
+if SERIAL_PORT is None:
+    print("Arduino not found. Please connect your Arduino device! or")
+    SERIAL_PORT = input("Manually type in the PortName")
+# Constants
+
 BAUD_RATE = 9600
 
 # Generate a unique file name using the current date and time
@@ -68,5 +94,5 @@ def update_plot(frame):
 # Create the plot
 fig, ax = plt.subplots()
 
-ani = FuncAnimation(fig, update_plot, interval=1000)  # Adjust interval as needed
+ani = FuncAnimation(fig, update_plot, interval=1000, cache_frame_data=False)  # Adjust interval as needed
 plt.show()
