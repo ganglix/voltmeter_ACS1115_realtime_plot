@@ -38,24 +38,24 @@ void loop() {
 
   // Convert ADC readings to voltages
   voltage0 = adc0 * multiplier; 
-  voltage1 = adc1 * multiplier; 
-  voltage2 = adc2 * multiplier; 
-  voltage3 = adc3 * multiplier; 
+//   voltage1 = adc1 * multiplier; 
+//   voltage2 = adc2 * multiplier; 
+//   voltage3 = adc3 * multiplier; 
 
   // Print the current time and voltage readings to Serial
   Serial.print(time);
   Serial.print(", ");
   
-  Serial.print(voltage0);
-  Serial.print(", ");
+//   Serial.print(voltage0);
+//   Serial.print(", ");
 
-  Serial.print(voltage1);
-  Serial.print(", ");
+//   Serial.print(voltage1);
+//   Serial.print(", ");
 
-  Serial.print(voltage2);
-  Serial.print(", ");
+//   Serial.print(voltage2);
+//   Serial.print(", ");
 
-  Serial.println(voltage3);
+  Serial.println(voltage0);
 
   delay(5000);  // Delay for 5 seconds before next reading
 }

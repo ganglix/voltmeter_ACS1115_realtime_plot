@@ -41,9 +41,9 @@ def read_and_process_data():
     # Append to the lists
     x_vals.append(time_value)
     voltage_1.append(voltage_values[0])
-    voltage_2.append(voltage_values[1])
-    voltage_3.append(voltage_values[2])
-    voltage_4.append(voltage_values[3])
+    # voltage_2.append(voltage_values[1])
+    # voltage_3.append(voltage_values[2])
+    # voltage_4.append(voltage_values[3])
 
     # Append to CSV file
     with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
@@ -58,9 +58,9 @@ def update_plot(frame):
     read_and_process_data()
     plt.cla()
     plt.plot(x_vals, voltage_1, label='Voltage 1')
-    plt.plot(x_vals, voltage_2, label='Voltage 2')
-    plt.plot(x_vals, voltage_3, label='Voltage 3')
-    plt.plot(x_vals, voltage_4, label='Voltage 4')
+    # plt.plot(x_vals, voltage_2, label='Voltage 2')
+    # plt.plot(x_vals, voltage_3, label='Voltage 3')
+    # plt.plot(x_vals, voltage_4, label='Voltage 4')
     plt.xlabel('Time (s)')
     plt.ylabel('Voltage (mV)')
     plt.legend()
