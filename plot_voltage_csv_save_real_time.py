@@ -39,7 +39,11 @@ current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 CSV_FILE_NAME = f'log_files/voltage_log_real_time_{current_time}.csv'
 
 # Initialize serial connection
-ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+try:
+    ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+except serial.SerialException:
+    print("Failed to connect to serial port.")
+    exit(1)
 
 # Initialize empty lists to store data
 x_vals = []
