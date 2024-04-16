@@ -27,7 +27,7 @@ def find_arduino_ports():
     else:
         print("Multiple Arduino devices found. Please choose one:")
         for index, port in enumerate(matching_ports):
-            print(f"{index + 1}: {port}")
+            print(f"{index + 1}: {port.device}")
         choice = int(input("Enter the number of the Arduino you want to connect to: "))
         return matching_ports[choice - 1]
 
