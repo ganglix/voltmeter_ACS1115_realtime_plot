@@ -16,20 +16,20 @@ def find_arduino_ports():
         "/dev/ttyACM"  # Also found on Linux
     ]
     
-    matching_ports = [port.device for port in ports if any(descriptor in port.device for descriptor in common_descriptors)]
+    matching_ports = [port for port in ports if any(descriptor in port.device for descriptor in common_descriptors)]
     
     if not matching_ports:
         print("Arduino not found. Please connect your Arduino device or")
         return input("Manually type in the PortName: ")
     elif len(matching_ports) == 1:
         print(f"Arduino found on port: {matching_ports[0]}")
-        return matching_ports[0]
+        return matching_ports[0].device
     else:
         print("Multiple Arduino devices found. Please choose one:")
         for index, port in enumerate(matching_ports):
-            print(f"{index + 1}: {port.device}")
+            print(f"{index + 1}: {port}")
         choice = int(input("Enter the number of the Arduino you want to connect to: "))
-        return matching_ports[choice - 1]
+        return matching_ports[choice - 1].device
 
 # Using the function
 SERIAL_PORT = find_arduino_ports()
