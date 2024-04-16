@@ -5,31 +5,35 @@ import csv
 from datetime import datetime
 from serial.tools import list_ports  # Import the list_ports tool
 
-def find_arduino_port():
-    """This function attempts to find a port connected to an Arduino by checking against a list of common device names."""
-    ports = list_ports.comports()
+def find_arduino_ports():
+    """This function finds all ports that might be connected to an Arduino."""
+    ports = serial.tools.list_ports.comports()
     common_descriptors = [
-        "COM",  # Common on Windows
+        "COM",  # Common descriptor on Windows
         "/dev/cu.usbmodem",  # Common on macOS
         "/dev/cu.usbserial",  # Also found on macOS
         "/dev/ttyUSB",  # Common on Linux
         "/dev/ttyACM"  # Also found on Linux
     ]
     
-    for port in ports:
-        # Check if any part of the port's device name contains any of the common descriptors
-        if any(descriptor in port.device for descriptor in common_descriptors):
-            print(f"Arduino found on port: {port.device}")
-            return port.device
+    matching_ports = [port.device for port in ports if any(descriptor in port.device for descriptor in common_descriptors)]
     
-    print("No Arduino found based on common naming conventions.")
-    return None
+    if not matching_ports:
+        print("Arduino not found. Please connect your Arduino device or")
+        return input("Manually type in the PortName: ")
+    elif len(matching_ports) == 1:
+        print(f"Arduino found on port: {matching_ports[0]}")
+        return matching_ports[0]
+    else:
+        print("Multiple Arduino devices found. Please choose one:")
+        for index, port in enumerate(matching_ports):
+            print(f"{index + 1}: {port}")
+        choice = int(input("Enter the number of the Arduino you want to connect to: "))
+        return matching_ports[choice - 1]
 
-# Constants
-SERIAL_PORT = find_arduino_port()
-if SERIAL_PORT is None:
-    print("Arduino not found. Please connect your Arduino device! or")
-    SERIAL_PORT = input("Manually type in the PortName")
+# Using the function
+SERIAL_PORT = find_arduino_ports()
+
 # Constants
 
 BAUD_RATE = 9600
