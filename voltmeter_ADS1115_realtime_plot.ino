@@ -7,55 +7,65 @@ int16_t adc0, adc1, adc2, adc3;  // Variables to hold ADC reading for each chann
 float multiplier = 0.125F;       // ADS1115  // 1x gain   +/- 4.096V  1 bit = 0.125mV
 float voltage0, voltage1, voltage2, voltage3; // Variables for voltage readings for each channel
 
+bool started = false; // Flag to indicate if data acquisition should run
 
 void setup() {
   Serial.begin(9600);
-  ads.begin();  // init ADS1115 ADC
+  ads.begin();  // Initialize ADS1115 ADC
 
   // The ADC input range (or gain) can be changed via the following
   // functions, but be careful never to exceed VDD +0.3V max, or to
   // exceed the upper and lower limits if you adjust the input range!
   // Setting these values incorrectly may destroy your ADC!
+
   //                                                                ADS1115
   //                                                                -------
   // ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 0.1875mV (default)
-   ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
+     ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
   // ads.setGain(GAIN_TWO);        // 2x gain   +/- 2.048V  1 bit = 0.0625mV
   // ads.setGain(GAIN_FOUR);       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
   // ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV
 }
 
-
 void loop() {
-  float time = millis() / 1000.0; // Calculate the current time using millis() and convert it to seconds for time stamping
+  // Listen for serial commands from Python GUI
+  if (Serial.available()) {
+    char cmd = Serial.read();
+    if (cmd == 'S') started = true;
+    if (cmd == 'X') started = false;
+  }
 
-  // Read from ADS1115 channels
-  adc0 = ads.readADC_SingleEnded(0); // Read AIN0
-  adc1 = ads.readADC_SingleEnded(1); // Read AIN1
-  adc2 = ads.readADC_SingleEnded(2); // Read AIN2
-  adc3 = ads.readADC_SingleEnded(3); // Read AIN3
+  if (started) {
+    float time = millis() / 1000.0; // Calculate the current time in seconds
 
-  // Convert ADC readings to voltages
-  voltage0 = adc0 * multiplier; 
-  voltage1 = adc1 * multiplier; 
-  voltage2 = adc2 * multiplier; 
-  voltage3 = adc3 * multiplier; 
+    // Read from ADS1115 channels
+    adc0 = ads.readADC_SingleEnded(0); // Read AIN0
+    adc1 = ads.readADC_SingleEnded(1); // Read AIN1
+    adc2 = ads.readADC_SingleEnded(2); // Read AIN2
+    adc3 = ads.readADC_SingleEnded(3); // Read AIN3
 
-  // Print the current time and voltage readings to Serial
-  Serial.print(time);
-  Serial.print(", ");
-  
-  Serial.print(voltage0);
-  Serial.print(", ");
+    // Convert ADC readings to voltages
+    voltage0 = adc0 * multiplier; 
+    voltage1 = adc1 * multiplier; 
+    voltage2 = adc2 * multiplier; 
+    voltage3 = adc3 * multiplier; 
 
-  Serial.print(voltage1);
-  Serial.print(", ");
+    // Print the current time and voltage readings to Serial
+    Serial.print(time, 2);
+    Serial.print(", ");
+    
+    Serial.print(voltage0, 2);
+    Serial.print(", ");
 
-  Serial.print(voltage2);
-  Serial.print(", ");
+    Serial.print(voltage1, 2);
+    Serial.print(", ");
 
-  Serial.println(voltage0);
+    Serial.print(voltage2, 2);
+    Serial.print(", ");
 
-  delay(2000);  // Delay for 2 seconds before next reading
+    Serial.println(voltage3, 2); // Corrected: voltage3
+
+    delay(1000);  // Delay for 1 second before next reading
+  }
 }
