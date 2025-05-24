@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QGridLayout, QComboBox, QMessageBox, QFileDialog, QSpinBox
 )
 from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QColor, QPalette
 import pyqtgraph as pg
 import serial
 import serial.tools.list_ports
@@ -20,9 +21,10 @@ def find_arduino_ports():
 BAUD_RATE = 9600
 current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 CSV_FILE_NAME = f'log_files/voltage_log_real_time_{current_time}.csv'
+
 with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(['Time'] + [f'Channel{i+1}' for i in range(8)])
+    writer.writerow(['Time'] + [f'Channel{i+1}' for i in range(8)] + ['Threshold', 'Status', 'Label'])
 
 class DAQWidget(QWidget):
     def __init__(self):
@@ -42,6 +44,9 @@ class DAQWidget(QWidget):
         self.connect_button = QPushButton("Connect")
         self.connect_button.clicked.connect(self.connect_device)
 
+        self.label_input = QLineEdit()
+        self.label_input.setPlaceholderText("Enter label")
+
         self.start_button = QPushButton("Start Acquisition")
         self.start_button.clicked.connect(self.start_acquisition)
 
@@ -56,21 +61,20 @@ class DAQWidget(QWidget):
         self.threshold_input.setValue(100)
         self.threshold_input.setSuffix(" mV")
 
+        self.led_label = QLabel("●")
+        self.led_label.setStyleSheet("color: gray; font-size: 24px")
+
         self.voltage_boxes = [QLineEdit() for _ in range(8)]
         for box in self.voltage_boxes:
             box.setReadOnly(True)
-            box.setAlignment(Qt.AlignLeft)
 
         self.delta_labels = [QLabel() for _ in range(8)]
-        for label in self.delta_labels:
-            label.setAlignment(Qt.AlignLeft)
 
         voltage_display = QGridLayout()
         for i, (box, delta) in enumerate(zip(self.voltage_boxes, self.delta_labels)):
             voltage_display.addWidget(QLabel(f"Channel {i+1} (mV):"), i, 0)
             voltage_display.addWidget(box, i, 1)
             voltage_display.addWidget(delta, i, 2)
-
 
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setLabel('left', 'Voltage (mV)')
@@ -99,15 +103,22 @@ class DAQWidget(QWidget):
         port_layout.addWidget(self.refresh_button)
         port_layout.addWidget(self.connect_button)
 
+        config_layout = QHBoxLayout()
+        config_layout.addWidget(QLabel("Label:"))
+        config_layout.addWidget(self.label_input)
+        config_layout.addWidget(QLabel("Threshold:"))
+        config_layout.addWidget(self.threshold_input)
+        config_layout.addWidget(QLabel("Status:"))
+        config_layout.addWidget(self.led_label)
+
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.save_button)
-        button_layout.addWidget(QLabel("Threshold:"))
-        button_layout.addWidget(self.threshold_input)
 
         left_layout = QVBoxLayout()
         left_layout.addLayout(port_layout)
+        left_layout.addLayout(config_layout)
         left_layout.addLayout(button_layout)
         left_layout.addLayout(voltage_display)
 
@@ -151,6 +162,10 @@ class DAQWidget(QWidget):
             self.ser.write(b'S')
             self.timer.start(1000)
             self.acquisition_started = True
+            self.led_label.setStyleSheet("color: green; font-size: 24px")
+            with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
         else:
             QMessageBox.warning(self, "Start Error", "Serial port not connected.")
 
@@ -159,6 +174,10 @@ class DAQWidget(QWidget):
         if self.ser and self.ser.is_open:
             self.ser.write(b'X')
         self.acquisition_started = False
+        self.led_label.setStyleSheet("color: gray; font-size: 24px")
+        with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([f"Stop Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
 
     def update_plot(self):
         try:
@@ -180,20 +199,29 @@ class DAQWidget(QWidget):
 
             rebar_ref = min(-voltages[0], -voltages[1], -voltages[2], -voltages[3])
             threshold = self.threshold_input.value()
+            label = self.label_input.text()
+            warning_flag = False
             for i in range(4, 8):
                 delta = -voltages[i] - rebar_ref
-                text = f"Δφ = {delta:.1f} mV"
+                text = f"Δϕ = {delta:.1f} mV"
                 if delta > threshold:
                     self.delta_labels[i].setText(f"<b><font color='red'>{text}</font></b>")
+                    warning_flag = True
                 else:
                     self.delta_labels[i].setText(text)
+
+            if warning_flag:
+                self.led_label.setStyleSheet("color: red; font-size: 24px")
+            elif self.acquisition_started:
+                self.led_label.setStyleSheet("color: green; font-size: 24px")
 
             if self.time_buffer[-1] - self.time_buffer[0] > 0:
                 self.plot_widget.setXRange(self.time_buffer[-1] - 10, self.time_buffer[-1])
 
             with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow([time_value] + voltages)
+                status = "P" if warning_flag else "N"
+                writer.writerow([time_value] + voltages + [threshold, status, label])
         except Exception as e:
             print(f"Error reading serial data: {e}")
 
@@ -204,15 +232,18 @@ class DAQWidget(QWidget):
                 self.save_file_path = file_path
                 with open(self.save_file_path, 'w', newline='') as f:
                     writer = csv.writer(f)
-                    writer.writerow(['Time'] + [f'Channel{i+1}' for i in range(8)])
+                    writer.writerow(['Time'] + [f'Channel{i+1}' for i in range(8)] + ['Threshold', 'Status', 'Label'])
             else:
                 return
         try:
             latest_time = self.time_buffer[-1]
             latest_values = [buffer[-1] for buffer in self.data_buffers]
+            threshold = self.threshold_input.value()
+            status = self.led_label.styleSheet().find("red") != -1
+            label = self.label_input.text()
             with open(self.save_file_path, 'a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([latest_time] + latest_values)
+                writer.writerow([latest_time] + latest_values + [threshold, "P" if status else "N", label])
             QMessageBox.information(self, "Save Successful", f"Latest data saved to {self.save_file_path}.")
         except Exception as e:
             QMessageBox.critical(self, "Save Failed", f"Error: {e}")
