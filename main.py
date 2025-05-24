@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QGridLayout, QComboBox, QMessageBox, QFileDialog
+    QLabel, QLineEdit, QGridLayout, QComboBox, QMessageBox, QFileDialog, QSpinBox
 )
 from PyQt5.QtCore import QTimer, Qt
 import pyqtgraph as pg
@@ -34,8 +34,6 @@ class DAQWidget(QWidget):
         self.save_file_path = None
         self.acquisition_started = False
 
-        self.threshold_input = QLineEdit("100")
-
         self.port_selector = QComboBox()
         self.refresh_ports()
         self.refresh_button = QPushButton("Refresh Ports")
@@ -53,50 +51,26 @@ class DAQWidget(QWidget):
         self.save_button = QPushButton("Save Data to CSV")
         self.save_button.clicked.connect(self.save_data_to_file)
 
+        self.threshold_input = QSpinBox()
+        self.threshold_input.setRange(0, 1000)
+        self.threshold_input.setValue(100)
+        self.threshold_input.setSuffix(" mV")
+
         self.voltage_boxes = [QLineEdit() for _ in range(8)]
         for box in self.voltage_boxes:
             box.setReadOnly(True)
+            box.setAlignment(Qt.AlignLeft)
 
         self.delta_labels = [QLabel() for _ in range(8)]
+        for label in self.delta_labels:
+            label.setAlignment(Qt.AlignLeft)
 
         voltage_display = QGridLayout()
+        for i, (box, delta) in enumerate(zip(self.voltage_boxes, self.delta_labels)):
+            voltage_display.addWidget(QLabel(f"Channel {i+1} (mV):"), i, 0)
+            voltage_display.addWidget(box, i, 1)
+            voltage_display.addWidget(delta, i, 2)
 
-        # Corner channels
-        voltage_display.addWidget(QLabel("Channel 1 (mV):"), 0, 0)
-        voltage_display.addWidget(self.voltage_boxes[0], 0, 1)
-        voltage_display.addWidget(self.delta_labels[0], 0, 2)
-
-        voltage_display.addWidget(QLabel("Channel 2 (mV):"), 0, 4)
-        voltage_display.addWidget(self.voltage_boxes[1], 0, 5)
-        voltage_display.addWidget(self.delta_labels[1], 0, 6)
-
-        voltage_display.addWidget(QLabel("Channel 3 (mV):"), 3, 0)
-        voltage_display.addWidget(self.voltage_boxes[2], 3, 1)
-        voltage_display.addWidget(self.delta_labels[2], 3, 2)
-
-        voltage_display.addWidget(QLabel("Channel 4 (mV):"), 3, 4)
-        voltage_display.addWidget(self.voltage_boxes[3], 3, 5)
-        voltage_display.addWidget(self.delta_labels[3], 3, 6)
-
-        # Center channels
-        voltage_display.addWidget(QLabel("Channel 5 (mV):"), 1, 2)
-        voltage_display.addWidget(self.voltage_boxes[4], 1, 3)
-        voltage_display.addWidget(self.delta_labels[4], 1, 4)
-
-        voltage_display.addWidget(QLabel("Channel 6 (mV):"), 1, 5)
-        voltage_display.addWidget(self.voltage_boxes[5], 1, 6)
-        voltage_display.addWidget(self.delta_labels[5], 1, 7)
-
-        voltage_display.addWidget(QLabel("Channel 7 (mV):"), 2, 2)
-        voltage_display.addWidget(self.voltage_boxes[6], 2, 3)
-        voltage_display.addWidget(self.delta_labels[6], 2, 4)
-
-        voltage_display.addWidget(QLabel("Channel 8 (mV):"), 2, 5)
-        voltage_display.addWidget(self.voltage_boxes[7], 2, 6)
-        voltage_display.addWidget(self.delta_labels[7], 2, 7)
-
-        voltage_display.addWidget(QLabel("Threshold (mV):"), 8, 0)
-        voltage_display.addWidget(self.threshold_input, 8, 1)
 
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setLabel('left', 'Voltage (mV)')
@@ -129,6 +103,8 @@ class DAQWidget(QWidget):
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.save_button)
+        button_layout.addWidget(QLabel("Threshold:"))
+        button_layout.addWidget(self.threshold_input)
 
         left_layout = QVBoxLayout()
         left_layout.addLayout(port_layout)
@@ -195,6 +171,7 @@ class DAQWidget(QWidget):
             voltages = [float(v) for v in parts[1:]]
             self.time_buffer = np.roll(self.time_buffer, -1)
             self.time_buffer[-1] = time_value
+
             for i in range(self.channel_count):
                 self.voltage_boxes[i].setText(f"{voltages[i]:.2f}")
                 self.data_buffers[i] = np.roll(self.data_buffers[i], -1)
@@ -202,13 +179,10 @@ class DAQWidget(QWidget):
                 self.curves[i].setData(self.time_buffer, self.data_buffers[i])
 
             rebar_ref = min(-voltages[0], -voltages[1], -voltages[2], -voltages[3])
-            try:
-                threshold = float(self.threshold_input.text())
-            except ValueError:
-                threshold = 100
+            threshold = self.threshold_input.value()
             for i in range(4, 8):
                 delta = -voltages[i] - rebar_ref
-                text = f"$\\Delta\\phi$ = {delta:.1f} mV"
+                text = f"Δφ = {delta:.1f} mV"
                 if delta > threshold:
                     self.delta_labels[i].setText(f"<b><font color='red'>{text}</font></b>")
                 else:
