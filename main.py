@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QGridLayout, QComboBox, QMessageBox, QFileDialog, QSpinBox
 )
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtGui import QFont
 import pyqtgraph as pg
 import serial
 import serial.tools.list_ports
@@ -31,7 +31,7 @@ class DAQWidget(QWidget):
         super().__init__()
 
         self.setWindowTitle("Arduino 8-Channel DAQ Logger")
-        self.resize(1200, 600)
+        self.resize(800, 400)
         self.ser = None
         self.save_file_path = None
         self.acquisition_started = False
@@ -62,23 +62,36 @@ class DAQWidget(QWidget):
         self.threshold_input.setSuffix(" mV")
 
         self.led_label = QLabel("●")
-        self.led_label.setStyleSheet("color: gray; font-size: 24px")
+        self.led_label.setStyleSheet("color: gray; font-size: 18px")
 
         self.voltage_boxes = [QLineEdit() for _ in range(8)]
         for box in self.voltage_boxes:
             box.setReadOnly(True)
+            box.setFixedWidth(60)
 
         self.delta_labels = [QLabel() for _ in range(8)]
+        for label in self.delta_labels:
+            label.setStyleSheet("font-size: 9pt")
 
         voltage_display = QGridLayout()
-        for i, (box, delta) in enumerate(zip(self.voltage_boxes, self.delta_labels)):
-            voltage_display.addWidget(QLabel(f"Channel {i+1} (mV):"), i, 0)
-            voltage_display.addWidget(box, i, 1)
-            voltage_display.addWidget(delta, i, 2)
+        for i in range(4):
+            voltage_display.addWidget(QLabel(f"Ch {i+1} (mV):"), i, 0)
+            voltage_display.addWidget(self.voltage_boxes[i], i, 1)
+            voltage_display.addWidget(self.delta_labels[i], i, 2)
+
+        for i in range(4, 8):
+            voltage_display.addWidget(QLabel(f"Ch {i+1} (mV):"), i - 4, 3)
+            voltage_display.addWidget(self.voltage_boxes[i], i - 4, 4)
+            voltage_display.addWidget(self.delta_labels[i], i - 4, 5)
 
         self.plot_widget = pg.PlotWidget()
-        self.plot_widget.setLabel('left', 'Voltage (mV)')
-        self.plot_widget.setLabel('bottom', 'Time (s)')
+        self.plot_widget.setMinimumHeight(200)
+        self.plot_widget.setLabel('left', 'Voltage (mV)', **{'font-size': '9pt'})
+        self.plot_widget.setLabel('bottom', 'Time (s)', **{'font-size': '9pt'})
+        self.plot_widget.getPlotItem().getAxis('left').setStyle(tickFont=QFont('Arial', 8))
+        self.plot_widget.getPlotItem().getAxis('bottom').setStyle(tickFont=QFont('Arial', 8))
+        self.plot_widget.getPlotItem().getViewBox().setMouseEnabled(x=False, y=False)
+        self.plot_widget.getPlotItem().showGrid(x=True, y=True)
         self.plot_widget.addLegend()
 
         self.buffer_size = 1000
@@ -102,6 +115,7 @@ class DAQWidget(QWidget):
         port_layout.addWidget(self.port_selector)
         port_layout.addWidget(self.refresh_button)
         port_layout.addWidget(self.connect_button)
+        port_layout.setSpacing(5)
 
         config_layout = QHBoxLayout()
         config_layout.addWidget(QLabel("Label:"))
@@ -110,8 +124,9 @@ class DAQWidget(QWidget):
         config_layout.addWidget(self.threshold_input)
         config_layout.addWidget(QLabel("Status:"))
         config_layout.addWidget(self.led_label)
+        config_layout.setSpacing(5)
 
-        button_layout = QHBoxLayout()
+        button_layout = QVBoxLayout()
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.save_button)
@@ -127,8 +142,8 @@ class DAQWidget(QWidget):
         right_layout.addWidget(self.reset_button)
 
         main_layout = QHBoxLayout()
-        main_layout.addLayout(left_layout, stretch=1)
-        main_layout.addLayout(right_layout, stretch=3)
+        main_layout.addLayout(left_layout, stretch=2)
+        main_layout.addLayout(right_layout, stretch=5)
 
         self.setLayout(main_layout)
 
@@ -162,7 +177,7 @@ class DAQWidget(QWidget):
             self.ser.write(b'S')
             self.timer.start(1000)
             self.acquisition_started = True
-            self.led_label.setStyleSheet("color: green; font-size: 24px")
+            self.led_label.setStyleSheet("color: green; font-size: 18px")
             with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow([f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
@@ -174,7 +189,7 @@ class DAQWidget(QWidget):
         if self.ser and self.ser.is_open:
             self.ser.write(b'X')
         self.acquisition_started = False
-        self.led_label.setStyleSheet("color: gray; font-size: 24px")
+        self.led_label.setStyleSheet("color: gray; font-size: 18px")
         with open(CSV_FILE_NAME, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow([f"Stop Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
@@ -211,9 +226,9 @@ class DAQWidget(QWidget):
                     self.delta_labels[i].setText(text)
 
             if warning_flag:
-                self.led_label.setStyleSheet("color: red; font-size: 24px")
+                self.led_label.setStyleSheet("color: red; font-size: 18px")
             elif self.acquisition_started:
-                self.led_label.setStyleSheet("color: green; font-size: 24px")
+                self.led_label.setStyleSheet("color: green; font-size: 18px")
 
             if self.time_buffer[-1] - self.time_buffer[0] > 0:
                 self.plot_widget.setXRange(self.time_buffer[-1] - 10, self.time_buffer[-1])
