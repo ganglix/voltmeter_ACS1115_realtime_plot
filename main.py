@@ -47,13 +47,13 @@ class DAQWidget(QWidget):
         self.label_input = QLineEdit()
         self.label_input.setPlaceholderText("Enter label")
 
-        self.start_button = QPushButton("Start Acquisition")
+        self.start_button = QPushButton("Start")
         self.start_button.clicked.connect(self.start_acquisition)
 
-        self.stop_button = QPushButton("Stop Acquisition")
+        self.stop_button = QPushButton("Stop")
         self.stop_button.clicked.connect(self.stop_acquisition)
 
-        self.save_button = QPushButton("Save Data to CSV")
+        self.save_button = QPushButton("Save to CSV")
         self.save_button.clicked.connect(self.save_data_to_file)
 
         self.threshold_input = QSpinBox()
@@ -67,7 +67,7 @@ class DAQWidget(QWidget):
         self.voltage_boxes = [QLineEdit() for _ in range(8)]
         for box in self.voltage_boxes:
             box.setReadOnly(True)
-            box.setFixedWidth(60)
+            box.setFixedWidth(80)
 
         self.delta_labels = [QLabel() for _ in range(8)]
         for label in self.delta_labels:
@@ -78,7 +78,6 @@ class DAQWidget(QWidget):
             voltage_display.addWidget(QLabel(f"Ch {i+1} (mV):"), i, 0)
             voltage_display.addWidget(self.voltage_boxes[i], i, 1)
             voltage_display.addWidget(self.delta_labels[i], i, 2)
-
         for i in range(4, 8):
             voltage_display.addWidget(QLabel(f"Ch {i+1} (mV):"), i - 4, 3)
             voltage_display.addWidget(self.voltage_boxes[i], i - 4, 4)
@@ -126,10 +125,11 @@ class DAQWidget(QWidget):
         config_layout.addWidget(self.led_label)
         config_layout.setSpacing(5)
 
-        button_layout = QVBoxLayout()
+        button_layout = QHBoxLayout()
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.save_button)
+        button_layout.setSpacing(5)
 
         left_layout = QVBoxLayout()
         left_layout.addLayout(port_layout)
@@ -207,7 +207,7 @@ class DAQWidget(QWidget):
             self.time_buffer[-1] = time_value
 
             for i in range(self.channel_count):
-                self.voltage_boxes[i].setText(f"{voltages[i]:.2f}")
+                self.voltage_boxes[i].setText(f"{voltages[i]:.1f}")
                 self.data_buffers[i] = np.roll(self.data_buffers[i], -1)
                 self.data_buffers[i][-1] = voltages[i]
                 self.curves[i].setData(self.time_buffer, self.data_buffers[i])
